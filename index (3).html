@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulateur budget pérennisation — Solinum</title>
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --violet:#5B3F9E;--violet-light:#EDE8F8;--violet-dark:#3D2970;
+  --coral:#E8522A;--coral-light:#FDEEE9;--coral-dark:#B53D1C;
+  --green:#2D9B6F;--green-light:#E3F5EE;--green-dark:#1C6B4A;
+  --amber:#C47A1A;--amber-light:#FEF3E0;
+  --bg:#F7F5F0;--surface:#FFFFFF;--surface2:#EEEBE3;
+  --border:rgba(30,26,46,0.08);--border2:rgba(30,26,46,0.16);
+  --text:#1E1A2E;--text-muted:#5C5670;--text-faint:#9590A8;
+  --radius:10px;--radius-lg:16px;
+}
+body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:2rem;}
+header{max-width:1100px;margin:0 auto 1rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border2);padding-bottom:1.25rem;}
+.logo-wrap{display:flex;align-items:center;gap:12px;}
+.soliguide-badge{display:flex;align-items:center;gap:7px;background:var(--violet);border-radius:8px;padding:6px 12px 6px 9px;}
+.soliguide-badge span{font-size:14px;font-weight:700;color:#fff;}
+.header-text h1{font-size:19px;font-weight:900;color:var(--violet);letter-spacing:-0.01em;}
+.header-text p{font-size:13px;color:var(--text-muted);margin-top:2px;}
+.main{max-width:1100px;margin:0 auto;}
+
+/* TABS */
+.tabs{display:flex;gap:0;margin-bottom:1.5rem;border-bottom:2px solid var(--border2);}
+.tab{padding:10px 24px;font-size:13px;font-weight:700;cursor:pointer;color:var(--text-muted);border:none;background:none;border-bottom:2px solid transparent;margin-bottom:-2px;transition:color 0.15s,border-color 0.15s;font-family:'Lato',sans-serif;}
+.tab:hover{color:var(--violet);}
+.tab.active{color:var(--violet);border-bottom-color:var(--violet);}
+.tab-content{display:none;}
+.tab-content.active{display:block;}
+
+/* Grilles */
+.layout2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;align-items:start;}
+.layout3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;align-items:start;}
+
+/* Panels */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem 1.5rem;margin-bottom:1rem;}
+.panel-title{font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--violet);margin-bottom:1rem;}
+.panel-subtitle{font-size:12px;color:var(--text-faint);margin-top:-0.7rem;margin-bottom:1rem;font-style:italic;}
+.section-sep{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-faint);margin:1rem 0 6px;padding-top:0.75rem;border-top:1px solid var(--border);}
+.section-sep:first-of-type{margin-top:0;padding-top:0;border-top:none;}
+
+/* Lignes */
+.row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);}
+.row:last-child{border-bottom:none;}
+.row-label{font-size:13px;color:var(--text);flex:1;}
+.row-sub{font-size:11px;color:var(--text-faint);margin-top:2px;}
+.row-computed{font-size:11px;color:var(--green-dark);background:var(--green-light);padding:2px 8px;border-radius:20px;font-family:'DM Mono',monospace;white-space:nowrap;}
+.row-computed.warn{color:var(--amber);background:var(--amber-light);}
+
+/* Stepper */
+.stepper{display:flex;align-items:center;gap:6px;}
+.step-btn{width:28px;height:28px;border-radius:50%;border:1px solid var(--border2);background:var(--surface);font-size:16px;cursor:pointer;color:var(--text-muted);display:flex;align-items:center;justify-content:center;transition:all 0.15s;line-height:1;font-weight:700;}
+.step-btn:hover{background:var(--violet-light);border-color:var(--violet);color:var(--violet);}
+.step-val{font-family:'DM Mono',monospace;font-size:14px;font-weight:500;min-width:42px;text-align:center;color:var(--text);}
+
+/* Inputs */
+.num-input{width:90px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);padding:6px 10px;font-size:13px;font-family:'DM Mono',monospace;color:var(--text);outline:none;text-align:right;transition:border-color 0.15s;}
+.num-input:focus{border-color:var(--violet);}
+.pct-input{width:65px;}
+.wide-input{width:110px;}
+
+/* KPI bar */
+.kpi-bar{display:grid;grid-template-columns:repeat(6,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:1rem;}
+.kpi-cell{background:var(--surface);padding:0.9rem 0.75rem;text-align:center;}
+.kpi-label{font-size:10px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;line-height:1.3;}
+.kpi-val{font-size:18px;font-weight:900;font-family:'DM Mono',monospace;letter-spacing:-0.02em;}
+.kpi-val.violet{color:var(--violet);}
+.kpi-val.coral{color:var(--coral);}
+.kpi-val.green{color:var(--green);}
+.kpi-val.amber{color:var(--amber);}
+.kpi-val.blue{color:#1A4A8B;}
+.kpi-val.teal{color:#1A6B5C;}
+
+/* Détail table */
+.detail-table{width:100%;border-collapse:collapse;font-size:13px;}
+.detail-table thead th{padding:8px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-faint);text-align:left;background:var(--surface2);border-bottom:1px solid var(--border);}
+.detail-table thead th:last-child{text-align:right;}
+.detail-table tbody tr{border-bottom:1px solid var(--border);}
+.detail-table tbody tr:last-child{border-bottom:none;}
+.detail-table tbody td{padding:9px 12px;vertical-align:middle;}
+.detail-table tfoot td{padding:9px 12px;font-weight:700;background:var(--violet-light);color:var(--violet-dark);border-top:2px solid var(--violet);}
+.detail-table tfoot td:last-child{text-align:right;font-family:'DM Mono',monospace;font-size:14px;}
+.tag-poste{display:inline-block;font-size:10px;font-weight:700;letter-spacing:0.04em;padding:3px 8px;border-radius:20px;text-transform:uppercase;}
+.tag-collecte{background:var(--violet-light);color:var(--violet-dark);}
+.tag-partenariat{background:var(--green-light);color:var(--green-dark);}
+.tag-saisonnier{background:var(--amber-light);color:var(--amber);}
+.tag-frais{background:var(--coral-light);color:var(--coral-dark);}
+.mono{font-family:'DM Mono',monospace;font-size:12px;color:var(--text-muted);}
+.right{text-align:right;}
+.bold-mono{font-family:'DM Mono',monospace;font-size:13px;font-weight:500;}
+
+/* Progress */
+.progress-bar{height:6px;background:var(--surface2);border-radius:3px;margin-top:10px;overflow:hidden;}
+.progress-fill{height:6px;border-radius:3px;background:var(--violet);transition:width 0.4s;}
+.ecart-box{border-radius:var(--radius);padding:0.75rem 1rem;font-size:13px;margin-top:1rem;display:flex;align-items:flex-start;gap:8px;flex-direction:column;}
+.ecart-ok{background:var(--green-light);color:var(--green-dark);border:1px solid rgba(45,155,111,0.25);}
+.ecart-warn{background:var(--amber-light);color:var(--amber);border:1px solid rgba(196,122,26,0.25);}
+.ecart-err{background:var(--coral-light);color:var(--coral-dark);border:1px solid rgba(232,82,42,0.25);}
+.ecart-line{font-size:13px;}
+.ecart-detail{font-size:11px;opacity:0.8;font-family:'DM Mono',monospace;}
+
+/* Frais */
+.frais-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.5rem 1.5rem;}
+
+/* Postulats */
+.postulats-toggle{font-size:12px;font-weight:700;color:var(--violet);cursor:pointer;display:inline-flex;align-items:center;gap:4px;user-select:none;margin-bottom:0.75rem;}
+.postulats-toggle::before{content:'▶';font-size:9px;transition:transform 0.2s;}
+.postulats-toggle.open::before{transform:rotate(90deg);}
+.postulats-panel{display:none;}
+.postulats-panel.open{display:block;}
+
+/* Boutons */
+.btn-row{display:flex;justify-content:flex-end;gap:8px;margin-top:1rem;}
+.btn{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);padding:8px 16px;font-size:13px;font-family:'Lato',sans-serif;font-weight:700;color:var(--text);cursor:pointer;transition:background 0.15s;}
+.btn:hover{background:var(--surface2);}
+.btn-primary{background:var(--violet);color:#fff;border-color:var(--violet);}
+.btn-primary:hover{background:var(--violet-dark);border-color:var(--violet-dark);}
+.note{font-size:12px;color:var(--text-faint);margin-top:1.5rem;text-align:center;line-height:1.6;}
+.footer-brand{text-align:center;margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--border);}
+
+/* Bandeau cible dans onglet 1 */
+.cible-ref-box{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);padding:0.6rem 1rem;font-size:12px;color:var(--text-muted);margin-bottom:0.75rem;display:flex;align-items:center;gap:6px;}
+.cible-ref-box strong{color:var(--violet-dark);font-family:'DM Mono',monospace;}
+
+@media(max-width:700px){
+  body{padding:1rem;}
+  .layout2,.layout3,.frais-grid{grid-template-columns:1fr;}
+  .kpi-bar{grid-template-columns:1fr 1fr 1fr;}
+  header{flex-direction:column;align-items:flex-start;gap:10px;}
+  .tabs{overflow-x:auto;}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-wrap">
+    <div class="soliguide-badge">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="rgba(255,255,255,0.3)"/>
+        <path d="M12 4C9.24 4 7 6.24 7 9c0 3.87 5 9.9 5 9.9S17 12.87 17 9c0-2.76-2.24-5-5-5z" fill="white"/>
+        <circle cx="12" cy="9" r="2.5" fill="#5B3F9E"/>
+      </svg>
+      <span>Solinum</span>
+    </div>
+    <div class="header-text">
+      <h1>Simulateur budget pérennisation</h1>
+      <p>Projection des coûts — Région · Stratégie 2027</p>
+    </div>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- ONGLETS -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('budget', this)">Budget N</button>
+    <button class="tab" onclick="switchTab('cible', this)">Budget organigramme cible</button>
+  </div>
+
+  <!-- ===== ONGLET 1 : BUDGET 2027 ===== -->
+  <div id="tab-budget" class="tab-content active">
+
+    <!-- KPI bar -->
+    <div class="kpi-bar">
+      <div class="kpi-cell"><div class="kpi-label">Budget RH + frais</div><div class="kpi-val violet" id="total_budget_global">—</div></div>
+      <div class="kpi-cell"><div class="kpi-label">Par département</div><div class="kpi-val coral" id="cout_par_dept">—</div></div>
+      <div class="kpi-cell"><div class="kpi-label">ETP total</div><div class="kpi-val green" id="total_etp">—</div></div>
+      <div class="kpi-cell"><div class="kpi-label">Financeurs cible</div><div class="kpi-val amber" id="total_financeurs">—</div></div>
+      <div class="kpi-cell"><div class="kpi-label">Fiches totales</div><div class="kpi-val blue" id="kpi_fiches">—</div></div>
+      <div class="kpi-cell"><div class="kpi-label">Partenaires</div><div class="kpi-val teal" id="kpi_partenaires">—</div></div>
+    </div>
+
+    <!-- Détail + comparaison -->
+    <div class="layout2">
+      <div class="panel" style="padding:0;overflow:hidden;margin-bottom:1rem;">
+        <table class="detail-table">
+          <thead><tr><th>Poste</th><th>Volume</th><th>Coût unit.</th><th class="right">Total</th></tr></thead>
+          <tbody id="detail_body"></tbody>
+          <tfoot>
+            <tr><td colspan="3">Total RH</td><td id="total_rh_foot">—</td></tr>
+            <tr><td colspan="3">Total frais annexes</td><td id="total_frais_foot">—</td></tr>
+            <tr><td colspan="3" style="font-size:14px;">Budget total estimé</td><td id="total_foot">—</td></tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <div>
+        <!-- Comparaison cible 2028 -->
+        <div class="panel">
+          <div class="panel-title">Comparaison organigramme cible 2028</div>
+          <div class="cible-ref-box">
+            ↗ Budget calculé dans l'onglet "Organigramme cible" : <strong id="ref_budget_cible">250 000 €</strong>
+          </div>
+          <div id="ecart_box" class="ecart-box ecart-ok">
+            <div class="ecart-line" id="ecart_line">—</div>
+            <div class="ecart-detail" id="ecart_detail"></div>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" id="progress_fill" style="width:0%"></div></div>
+          <div style="display:flex;justify-content:space-between;margin-top:6px;">
+            <span style="font-size:11px;color:var(--text-faint)">Budget 2027</span>
+            <span style="font-size:11px;color:var(--text-faint)" id="progress_label">—%</span>
+            <span style="font-size:11px;color:var(--text-faint)">Cible 2028</span>
+          </div>
+        </div>
+
+        <!-- Frais annexes -->
+        <div class="panel">
+          <div class="panel-title">Frais annexes</div>
+          <div class="frais-grid">
+            <div class="row" style="border-bottom:none;padding:6px 0;">
+              <div class="row-label">Communication</div>
+              <input class="num-input" type="number" id="frais_com" value="0" step="100" oninput="compute()">
+            </div>
+            <div class="row" style="border-bottom:none;padding:6px 0;">
+              <div class="row-label">Déplacements</div>
+              <input class="num-input" type="number" id="frais_dep" value="0" step="100" oninput="compute()">
+            </div>
+            <div class="row" style="border-bottom:none;padding:6px 0;">
+              <div class="row-label">Matériel</div>
+              <input class="num-input" type="number" id="frais_mat" value="0" step="100" oninput="compute()">
+            </div>
+            <div class="row" style="border-bottom:none;padding:6px 0;">
+              <div class="row-label">Locaux</div>
+              <input class="num-input" type="number" id="frais_loc" value="0" step="100" oninput="compute()">
+            </div>
+          </div>
+          <div class="row" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);border-bottom:none;">
+            <div class="row-label" style="font-weight:700;">Total frais annexes</div>
+            <span class="bold-mono" id="total_frais_display">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3 colonnes de saisie -->
+    <div class="layout3">
+
+      <!-- Contexte territorial -->
+      <div class="panel">
+        <div class="panel-title">Contexte territorial</div>
+        <div class="row">
+          <div class="row-label">Départements couverts</div>
+          <div class="stepper">
+            <button class="step-btn" onclick="stepB('nb_depts',-1)">−</button>
+            <span class="step-val" id="nb_depts_val">8</span>
+            <button class="step-btn" onclick="stepB('nb_depts',1)">+</button>
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <div class="row-label">Départements dans la région</div>
+            <div class="row-sub" id="depts_restants_sub">— depts restants à couvrir</div>
+          </div>
+          <div class="stepper">
+            <button class="step-btn" onclick="stepB('nb_region_depts',-1)">−</button>
+            <span class="step-val" id="nb_region_depts_val">13</span>
+            <button class="step-btn" onclick="stepB('nb_region_depts',1)">+</button>
+          </div>
+        </div>
+        <div class="row">
+          <div class="row-label">Volume total de fiches</div>
+          <input class="num-input" type="number" id="nb_fiches" value="4568" step="50" oninput="compute()">
+        </div>
+        <div class="row">
+          <div>
+            <div class="row-label">Mise à jour autonome (pros)</div>
+            <div class="row-sub" id="autonomie_sub">25% → 1 142 fiches déduites</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;">
+            <input class="num-input pct-input" type="number" id="pct_autonomie" value="25" min="0" max="100" step="5" oninput="compute()">
+            <span style="font-size:13px;color:var(--text-muted)">%</span>
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <div class="row-label" style="color:var(--text-muted)">Fiches màj en direct (campagnes)</div>
+            <div class="row-sub">Total − autonomie pros</div>
+          </div>
+          <span class="mono" id="fiches_nettes">—</span>
+        </div>
+        <div class="row">
+          <div class="row-label">Partenaires</div>
+          <input class="num-input" type="number" id="nb_partenaires" value="165" step="5" oninput="compute()">
+        </div>
+        <div class="row">
+          <div class="row-label">Financeurs / département</div>
+          <div class="stepper">
+            <button class="step-btn" onclick="stepB('financeurs_par_dept',-1)">−</button>
+            <span class="step-val" id="financeurs_par_dept_val">3</span>
+            <button class="step-btn" onclick="stepB('financeurs_par_dept',1)">+</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Coûts unitaires -->
+      <div class="panel">
+        <div class="panel-title">Coûts unitaires</div>
+        <div class="panel-subtitle">Saisissez le salaire brut annuel — le coût chargé est calculé automatiquement</div>
+
+        <div class="row">
+          <div><div class="row-label">Taux charges patronales</div><div class="row-sub">En % du salaire brut</div></div>
+          <div style="display:flex;align-items:center;gap:5px;">
+            <input class="num-input pct-input" type="number" id="taux_charges" value="42" min="0" max="100" step="1" oninput="compute()">
+            <span style="font-size:13px;color:var(--text-muted)">%</span>
+          </div>
+        </div>
+
+        <div class="section-sep">Agent de collecte</div>
+        <div class="row">
+          <div><div class="row-label">Salaire brut annuel</div><div class="row-sub">Pour 1 ETP</div></div>
+          <input class="num-input" type="number" id="brut_collecte" value="26000" step="500" oninput="compute()">
+        </div>
+        <div class="row">
+          <div class="row-label" style="color:var(--text-faint);font-size:12px;">Coût chargé (brut × (1 + taux))</div>
+          <span class="bold-mono" id="charge_collecte" style="color:var(--violet)">—</span>
+        </div>
+
+        <div class="section-sep">Partenariats / Levée de fonds</div>
+        <div class="row">
+          <div><div class="row-label">Salaire brut annuel</div><div class="row-sub">Pour 1 ETP</div></div>
+          <input class="num-input" type="number" id="brut_partenariat" value="29000" step="500" oninput="compute()">
+        </div>
+        <div class="row">
+          <div class="row-label" style="color:var(--text-faint);font-size:12px;">Coût chargé (brut × (1 + taux))</div>
+          <span class="bold-mono" id="charge_partenariat" style="color:var(--violet)">—</span>
+        </div>
+
+        <div class="section-sep">CDD saisonnier (12 semaines)</div>
+        <div class="row">
+          <div><div class="row-label">Salaire brut (contrat complet)</div><div class="row-sub">Pour 1 ETP — contrat 12 semaines</div></div>
+          <input class="num-input" type="number" id="brut_saisonnier" value="5200" step="100" oninput="compute()">
+        </div>
+        <div class="row">
+          <div class="row-label" style="color:var(--text-faint);font-size:12px;">Coût chargé</div>
+          <span class="bold-mono" id="charge_saisonnier" style="color:var(--violet)">—</span>
+        </div>
+
+        <div style="margin-top:1rem;">
+          <div class="postulats-toggle" id="postulats_toggle" onclick="togglePostulats()">Modifier les postulats</div>
+          <div class="postulats-panel" id="postulats_panel">
+            <div class="row">
+              <div><div class="row-label">Fiches / 0,8 ETP agent</div></div>
+              <input class="num-input" type="number" id="postulat_fiches_etp" value="3000" step="100" oninput="compute()">
+            </div>
+            <div class="row">
+              <div><div class="row-label">Financeurs / ETP LDF</div></div>
+              <input class="num-input" type="number" id="postulat_financeurs_etp" value="84" step="1" oninput="compute()">
+            </div>
+            <div class="row">
+              <div><div class="row-label">Partenaires / ETP partenariats</div></div>
+              <input class="num-input" type="number" id="postulat_partenaires_etp" value="340" step="5" oninput="compute()">
+            </div>
+            <div class="row">
+              <div><div class="row-label">Fiches / agent (campagne)</div></div>
+              <input class="num-input" type="number" id="postulat_fiches_agent_campagne" value="720" step="10" oninput="compute()">
+            </div>
+            <div class="row">
+              <div><div class="row-label">Fiches / saisonnier (campagne)</div></div>
+              <input class="num-input" type="number" id="postulat_fiches_sais" value="600" step="50" oninput="compute()">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RH -->
+      <div class="panel">
+        <div class="panel-title">Ressources humaines</div>
+        <div class="section-sep">Agent de collecte</div>
+        <div class="row">
+          <div class="row-label">ETP agent permanent</div>
+          <div class="stepper">
+            <button class="step-btn" onclick="stepB('etp_collecte',-0.1)">−</button>
+            <span class="step-val" id="etp_collecte_val">1,6</span>
+            <button class="step-btn" onclick="stepB('etp_collecte',0.1)">+</button>
+          </div>
+        </div>
+        <div class="row">
+          <div class="row-label" style="color:var(--text-faint);font-size:12px;">Besoin théorique (0,8 ETP = 3 000 fiches)</div>
+          <span class="row-computed" id="etp_theo_collecte">—</span>
+        </div>
+        <div class="section-sep">Partenariats</div>
+        <div class="row">
+          <div class="row-label">ETP partenariats</div>
+          <div class="stepper">
+            <button class="step-btn" onclick="stepB('etp_partenariat',-0.1)">−</button>
+            <span class="step-val" id="etp_partenariat_val">1,0</span>
+            <button class="step-btn" onclick="stepB('etp_partenariat',0.1)">+</button>
+          </div>
+        </div>
+        <div class="row">
+          <div class="row-label" style="color:var(--text-faint);font-size:12px;">Besoin théorique</div>
+          <span class="row-computed" id="etp_theo_part">—</span>
+        </div>
+        <div class="section-sep">Levée de fonds</div>
+        <div class="row">
+          <div><div class="row-label">ETP levée de fonds</div><div class="row-sub" id="financeurs_info">—</div></div>
+          <div class="stepper">
+            <button class="step-btn" onclick="stepB('etp_ldf',-0.05)">−</button>
+            <span class="step-val" id="etp_ldf_val">0,20</span>
+            <button class="step-btn" onclick="stepB('etp_ldf',0.05)">+</button>
+          </div>
+        </div>
+        <div class="row">
+          <div class="row-label" style="color:var(--text-faint);font-size:12px;">Besoin théorique</div>
+          <span class="row-computed" id="etp_theo_ldf">—</span>
+        </div>
+        <div class="section-sep">CDD Saisonniers (màj)</div>
+        <div class="row">
+          <div><div class="row-label">Nombre d'ETP CDD saisonniers</div><div class="row-sub">12 semaines chacun</div></div>
+          <div class="stepper">
+            <button class="step-btn" onclick="stepB('nb_saisonniers',-0.1)">−</button>
+            <span class="step-val" id="nb_saisonniers_val">3,0</span>
+            <button class="step-btn" onclick="stepB('nb_saisonniers',0.1)">+</button>
+          </div>
+        </div>
+        <div class="row">
+          <div><div class="row-label" style="color:var(--text-faint);font-size:12px;">Besoin théorique</div><div class="row-sub" id="sais_calcul_detail" style="font-size:10px;">—</div></div>
+          <span class="row-computed" id="etp_theo_sais">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" onclick="exportCSV()">↓ Exporter CSV</button>
+      <button class="btn btn-primary" onclick="window.print()">Imprimer</button>
+    </div>
+    <p class="note">Postulat collecte : 0,8 ETP = 3 000 fiches (totales, hors autonomie). Saisonniers : fiches nettes − couverture agents ÷ 600 fiches/CDD.</p>
+  </div>
+
+  <!-- ===== ONGLET 2 : ORGANIGRAMME CIBLE ===== -->
+  <div id="tab-cible" class="tab-content">
+
+    <!-- KPI bar cible -->
+    <div class="kpi-bar">
+      <div class="kpi-cell"><div class="kpi-label">Budget cible RH + frais</div><div class="kpi-val violet" id="c_total_budget_global">—</div></div>
+      <div class="kpi-cell"><div class="kpi-label">Par département</div><div class="kpi-val coral" id="c_cout_par_dept">—</div></div>
+      <div class="kpi-cell"><div class="kpi-label">ETP total</div><div class="kpi-val green" id="c_total_etp">—</div></div>
+      <div class="kpi-cell"><div class="kpi-label">Financeurs cible</div><div class="kpi-val amber" id="c_total_financeurs">—</div></div>
+      <div class="kpi-cell"><div class="kpi-label">Fiches totales</div><div class="kpi-val blue" id="c_kpi_fiches">—</div></div>
+      <div class="kpi-cell"><div class="kpi-label">Partenaires</div><div class="kpi-val teal" id="c_kpi_partenaires">—</div></div>
+    </div>
+
+    <div class="layout2">
+      <div class="panel" style="padding:0;overflow:hidden;margin-bottom:1rem;">
+        <table class="detail-table">
+          <thead><tr><th>Poste</th><th>Volume</th><th>Coût unit.</th><th class="right">Total</th></tr></thead>
+          <tbody id="c_detail_body"></tbody>
+          <tfoot>
+            <tr><td colspan="3">Total RH</td><td id="c_total_rh_foot">—</td></tr>
+            <tr><td colspan="3">Total frais annexes</td><td id="c_total_frais_foot">—</td></tr>
+            <tr><td colspan="3" style="font-size:14px;">Budget cible estimé</td><td id="c_total_foot">—</td></tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <!-- Frais cible -->
+      <div class="panel">
+        <div class="panel-title">Frais annexes (cible 2028)</div>
+        <div class="frais-grid">
+          <div class="row" style="border-bottom:none;padding:6px 0;">
+            <div class="row-label">Communication</div>
+            <input class="num-input" type="number" id="c_frais_com" value="0" step="100" oninput="computeCible()">
+          </div>
+          <div class="row" style="border-bottom:none;padding:6px 0;">
+            <div class="row-label">Déplacements</div>
+            <input class="num-input" type="number" id="c_frais_dep" value="0" step="100" oninput="computeCible()">
+          </div>
+          <div class="row" style="border-bottom:none;padding:6px 0;">
+            <div class="row-label">Matériel</div>
+            <input class="num-input" type="number" id="c_frais_mat" value="0" step="100" oninput="computeCible()">
+          </div>
+          <div class="row" style="border-bottom:none;padding:6px 0;">
+            <div class="row-label">Locaux</div>
+            <input class="num-input" type="number" id="c_frais_loc" value="0" step="100" oninput="computeCible()">
+          </div>
+        </div>
+        <div class="row" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);border-bottom:none;">
+          <div class="row-label" style="font-weight:700;">Total frais annexes</div>
+          <span class="bold-mono" id="c_total_frais_display">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3 colonnes cible -->
+    <div class="layout3">
+
+      <!-- Contexte territorial cible -->
+      <div class="panel">
+        <div class="panel-title">Contexte territorial</div>
+        <div class="row">
+          <div class="row-label">Départements couverts</div>
+          <div class="stepper">
+            <button class="step-btn" onclick="stepC('c_nb_depts',-1)">−</button>
+            <span class="step-val" id="c_nb_depts_val">13</span>
+            <button class="step-btn" onclick="stepC('c_nb_depts',1)">+</button>
+          </div>
+        </div>
+        <div class="row">
+          <div class="row-label">Volume total de fiches</div>
+          <input class="num-input" type="number" id="c_nb_fiches" value="6500" step="50" oninput="computeCible()">
+        </div>
+        <div class="row">
+          <div>
+            <div class="row-label">Mise à jour autonome (pros)</div>
+            <div class="row-sub" id="c_autonomie_sub">25% → 1 625 fiches déduites</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;">
+            <input class="num-input pct-input" type="number" id="c_pct_autonomie" value="25" min="0" max="100" step="5" oninput="computeCible()">
+            <span style="font-size:13px;color:var(--text-muted)">%</span>
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <div class="row-label" style="color:var(--text-muted)">Fiches màj en direct (campagnes)</div>
+            <div class="row-sub">Total − autonomie pros</div>
+          </div>
+          <span class="mono" id="c_fiches_nettes">—</span>
+        </div>
+        <div class="row">
+          <div class="row-label">Partenaires</div>
+          <input class="num-input" type="number" id="c_nb_partenaires" value="250" step="5" oninput="computeCible()">
+        </div>
+        <div class="row">
+          <div class="row-label">Financeurs / département</div>
+          <div class="stepper">
+            <button class="step-btn" onclick="stepC('c_financeurs_par_dept',-1)">−</button>
+            <span class="step-val" id="c_financeurs_par_dept_val">4</span>
+            <button class="step-btn" onclick="stepC('c_financeurs_par_dept',1)">+</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Coûts unitaires cible -->
+      <div class="panel">
+        <div class="panel-title">Coûts unitaires</div>
+        <div class="panel-subtitle">Saisissez le salaire brut annuel — le coût chargé est calculé automatiquement</div>
+
+        <div class="row">
+          <div><div class="row-label">Taux charges patronales</div><div class="row-sub">En % du salaire brut</div></div>
+          <div style="display:flex;align-items:center;gap:5px;">
+            <input class="num-input pct-input" type="number" id="c_taux_charges" value="42" min="0" max="100" step="1" oninput="computeCible()">
+            <span style="font-size:13px;color:var(--text-muted)">%</span>
+          </div>
+        </div>
+
+        <div class="section-sep">Agent de collecte</div>
+        <div class="row">
+          <div><div class="row-label">Salaire brut annuel</div><div class="row-sub">Pour 1 ETP</div></div>
+          <input class="num-input" type="number" id="c_brut_collecte" value="26000" step="500" oninput="computeCible()">
+        </div>
+        <div class="row">
+          <div class="row-label" style="color:var(--text-faint);font-size:12px;">Coût chargé (brut × (1 + taux))</div>
+          <span class="bold-mono" id="c_charge_collecte" style="color:var(--violet)">—</span>
+        </div>
+
+        <div class="section-sep">Partenariats / Levée de fonds</div>
+        <div class="row">
+          <div><div class="row-label">Salaire brut annuel</div><div class="row-sub">Pour 1 ETP</div></div>
+          <input class="num-input" type="number" id="c_brut_partenariat" value="29000" step="500" oninput="computeCible()">
+        </div>
+        <div class="row">
+          <div class="row-label" style="color:var(--text-faint);font-size:12px;">Coût chargé (brut × (1 + taux))</div>
+          <span class="bold-mono" id="c_charge_partenariat" style="color:var(--violet)">—</span>
+        </div>
+
+        <div class="section-sep">CDD saisonnier (12 semaines)</div>
+        <div class="row">
+          <div><div class="row-label">Salaire brut (contrat complet)</div><div class="row-sub">Pour 1 ETP — contrat 12 semaines</div></div>
+          <input class="num-input" type="number" id="c_brut_saisonnier" value="5200" step="100" oninput="computeCible()">
+        </div>
+        <div class="row">
+          <div class="row-label" style="color:var(--text-faint);font-size:12px;">Coût chargé</div>
+          <span class="bold-mono" id="c_charge_saisonnier" style="color:var(--violet)">—</span>
+        </div>
+
+        <div style="margin-top:1rem;">
+          <div class="postulats-toggle" id="c_postulats_toggle" onclick="toggleCiblePostulats()">Modifier les postulats</div>
+          <div class="postulats-panel" id="c_postulats_panel">
+            <div class="row">
+              <div class="row-label">Fiches / 0,8 ETP agent</div>
+              <input class="num-input" type="number" id="c_postulat_fiches_etp" value="3000" step="100" oninput="computeCible()">
+            </div>
+            <div class="row">
+              <div class="row-label">Financeurs / ETP LDF</div>
+              <input class="num-input" type="number" id="c_postulat_financeurs_etp" value="84" step="1" oninput="computeCible()">
+            </div>
+            <div class="row">
+              <div class="row-label">Partenaires / ETP partenariats</div>
+              <input class="num-input" type="number" id="c_postulat_partenaires_etp" value="340" step="5" oninput="computeCible()">
+            </div>
+            <div class="row">
+              <div class="row-label">Fiches / agent (campagne)</div>
+              <input class="num-input" type="number" id="c_postulat_fiches_agent_campagne" value="720" step="10" oninput="computeCible()">
+            </div>
+            <div class="row">
+              <div class="row-label">Fiches / saisonnier (campagne)</div>
+              <input class="num-input" type="number" id="c_postulat_fiches_sais" value="600" step="50" oninput="computeCible()">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RH cible -->
+      <div class="panel">
+        <div class="panel-title">Ressources humaines</div>
+        <div class="section-sep">Agent de collecte</div>
+        <div class="row">
+          <div class="row-label">ETP agent permanent</div>
+          <div class="stepper">
+            <button class="step-btn" onclick="stepC('c_etp_collecte',-0.1)">−</button>
+            <span class="step-val" id="c_etp_collecte_val">1,6</span>
+            <button class="step-btn" onclick="stepC('c_etp_collecte',0.1)">+</button>
+          </div>
+        </div>
+        <div class="row">
+          <div class="row-label" style="color:var(--text-faint);font-size:12px;">Besoin théorique (0,8 ETP = 3 000 fiches)</div>
+          <span class="row-computed" id="c_etp_theo_collecte">—</span>
+        </div>
+        <div class="section-sep">Partenariats</div>
+        <div class="row">
+          <div class="row-label">ETP partenariats</div>
+          <div class="stepper">
+            <button class="step-btn" onclick="stepC('c_etp_partenariat',-0.1)">−</button>
+            <span class="step-val" id="c_etp_partenariat_val">1,0</span>
+            <button class="step-btn" onclick="stepC('c_etp_partenariat',0.1)">+</button>
+          </div>
+        </div>
+        <div class="row">
+          <div class="row-label" style="color:var(--text-faint);font-size:12px;">Besoin théorique</div>
+          <span class="row-computed" id="c_etp_theo_part">—</span>
+        </div>
+        <div class="section-sep">Levée de fonds</div>
+        <div class="row">
+          <div><div class="row-label">ETP levée de fonds</div><div class="row-sub" id="c_financeurs_info">—</div></div>
+          <div class="stepper">
+            <button class="step-btn" onclick="stepC('c_etp_ldf',-0.05)">−</button>
+            <span class="step-val" id="c_etp_ldf_val">1,00</span>
+            <button class="step-btn" onclick="stepC('c_etp_ldf',0.05)">+</button>
+          </div>
+        </div>
+        <div class="row">
+          <div class="row-label" style="color:var(--text-faint);font-size:12px;">Besoin théorique</div>
+          <span class="row-computed" id="c_etp_theo_ldf">—</span>
+        </div>
+        <div class="section-sep">CDD Saisonniers (màj)</div>
+        <div class="row">
+          <div><div class="row-label">Nombre d'ETP CDD saisonniers</div><div class="row-sub">12 semaines chacun</div></div>
+          <div class="stepper">
+            <button class="step-btn" onclick="stepC('c_nb_saisonniers',-0.1)">−</button>
+            <span class="step-val" id="c_nb_saisonniers_val">4,0</span>
+            <button class="step-btn" onclick="stepC('c_nb_saisonniers',0.1)">+</button>
+          </div>
+        </div>
+        <div class="row">
+          <div><div class="row-label" style="color:var(--text-faint);font-size:12px;">Besoin théorique</div><div class="row-sub" id="c_sais_calcul_detail" style="font-size:10px;">—</div></div>
+          <span class="row-computed" id="c_etp_theo_sais">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" onclick="exportCSVCible()">↓ Exporter CSV</button>
+      <button class="btn btn-primary" onclick="window.print()">Imprimer</button>
+    </div>
+    <p class="note">Le budget calculé ici alimente automatiquement l'encart "Comparaison organigramme cible 2028" de l'onglet Budget 2027.</p>
+  </div>
+
+  <div class="footer-brand">
+    <span style="font-size:12px;color:var(--text-faint)">Outil interne — </span>
+    <span style="font-size:12px;font-weight:700;color:var(--violet)">Solinum</span>
+    <span style="font-size:12px;color:var(--text-faint)"> · Stratégie pérennisation 2027</span>
+  </div>
+</div>
+
+<script>
+/* ---- ÉTATS ---- */
+const stateB = { etp_collecte:1.6, etp_partenariat:1.0, etp_ldf:0.2, nb_saisonniers:3, nb_depts:8, financeurs_par_dept:3, nb_region_depts:13 };
+const stateC = { c_etp_collecte:1.6, c_etp_partenariat:1.0, c_etp_ldf:1.0, c_nb_saisonniers:4, c_nb_depts:13, c_financeurs_par_dept:4 };
+
+/* ---- TABS ---- */
+function switchTab(name, btn){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+}
+
+/* ---- HELPERS ---- */
+function fmt(n){ return Math.round(n).toLocaleString('fr-FR'); }
+
+function syncB(){
+  document.getElementById('etp_collecte_val').textContent    = stateB.etp_collecte.toFixed(1).replace('.',',');
+  document.getElementById('etp_partenariat_val').textContent = stateB.etp_partenariat.toFixed(1).replace('.',',');
+  document.getElementById('etp_ldf_val').textContent         = stateB.etp_ldf.toFixed(2).replace('.',',');
+  document.getElementById('nb_saisonniers_val').textContent  = stateB.nb_saisonniers.toFixed(1).replace('.',',');
+  document.getElementById('nb_depts_val').textContent        = stateB.nb_depts;
+  document.getElementById('financeurs_par_dept_val').textContent = stateB.financeurs_par_dept;
+  document.getElementById('nb_region_depts_val').textContent = stateB.nb_region_depts;
+}
+function syncC(){
+  document.getElementById('c_etp_collecte_val').textContent    = stateC.c_etp_collecte.toFixed(1).replace('.',',');
+  document.getElementById('c_etp_partenariat_val').textContent = stateC.c_etp_partenariat.toFixed(1).replace('.',',');
+  document.getElementById('c_etp_ldf_val').textContent         = stateC.c_etp_ldf.toFixed(2).replace('.',',');
+  document.getElementById('c_nb_saisonniers_val').textContent  = stateC.c_nb_saisonniers.toFixed(1).replace('.',',');
+  document.getElementById('c_nb_depts_val').textContent        = stateC.c_nb_depts;
+  document.getElementById('c_financeurs_par_dept_val').textContent = stateC.c_financeurs_par_dept;
+}
+
+function stepB(key, delta){ stateB[key]=Math.max(0,Math.round((stateB[key]+delta)*100)/100); syncB(); compute(); }
+function stepC(key, delta){ stateC[key]=Math.max(0,Math.round((stateC[key]+delta)*100)/100); syncC(); computeCible(); }
+
+function togglePostulats(){ document.getElementById('postulats_toggle').classList.toggle('open'); document.getElementById('postulats_panel').classList.toggle('open'); }
+function toggleCiblePostulats(){ document.getElementById('c_postulats_toggle').classList.toggle('open'); document.getElementById('c_postulats_panel').classList.toggle('open'); }
+
+/* ---- CALCUL COMMUN ---- */
+function calcBudget(st, ids){
+  const taux = (parseFloat(document.getElementById(ids.taux_charges).value) || 42) / 100;
+  const brutC = parseFloat(document.getElementById(ids.brut_collecte).value)    || 26000;
+  const brutP = parseFloat(document.getElementById(ids.brut_partenariat).value) || 29000;
+  const brutS = parseFloat(document.getElementById(ids.brut_saisonnier).value)  || 5200;
+  const cC = Math.round(brutC * (1 + taux));
+  const cP = Math.round(brutP * (1 + taux));
+  const cS = Math.round(brutS * (1 + taux));
+
+  // Afficher les coûts chargés calculés
+  document.getElementById(ids.charge_collecte).textContent    = fmt(cC) + ' €';
+  document.getElementById(ids.charge_partenariat).textContent = fmt(cP) + ' €';
+  document.getElementById(ids.charge_saisonnier).textContent  = fmt(cS) + ' €';
+
+  const nbF = parseFloat(document.getElementById(ids.nb_fiches).value)        || 0;
+  const pA  = parseFloat(document.getElementById(ids.pct_autonomie).value)    || 0;
+  const nbP = parseFloat(document.getElementById(ids.nb_partenaires).value)   || 0;
+  const pFE = parseFloat(document.getElementById(ids.postulat_fiches_etp).value)           || 3000;
+  const pFinE= parseFloat(document.getElementById(ids.postulat_financeurs_etp).value)       || 84;
+  const pParE= parseFloat(document.getElementById(ids.postulat_partenaires_etp).value)      || 340;
+  const pFAC = parseFloat(document.getElementById(ids.postulat_fiches_agent_campagne).value)|| 720;
+  const pFS  = parseFloat(document.getElementById(ids.postulat_fiches_sais).value)          || 600;
+  const fCom = parseFloat(document.getElementById(ids.frais_com).value)||0;
+  const fDep = parseFloat(document.getElementById(ids.frais_dep).value)||0;
+  const fMat = parseFloat(document.getElementById(ids.frais_mat).value)||0;
+  const fLoc = parseFloat(document.getElementById(ids.frais_loc).value)||0;
+
+  const fichesAuto   = nbF * (pA/100);
+  const fichesNettes = nbF - fichesAuto;
+  const totalFin     = st[ids.nb_depts] * st[ids.financeurs_par_dept];
+  const theoC = (nbF / pFE) * 0.8;
+  const theoP = nbP / pParE;
+  const theoL = totalFin / pFinE;
+  const fichesCovAgents = st[ids.etp_collecte] * pFAC;
+  const fichesRest = Math.max(0, fichesNettes - fichesCovAgents);
+  const theoS = fichesRest / pFS;
+  const coutC = st[ids.etp_collecte]    * cC;
+  const coutP = st[ids.etp_partenariat] * cP;
+  const coutL = st[ids.etp_ldf]         * cP;
+  const coutS = st[ids.nb_saisonniers]  * cS;
+  const totalRH    = coutC+coutP+coutL+coutS;
+  const totalFrais = fCom+fDep+fMat+fLoc;
+  const totalGlobal= totalRH+totalFrais;
+  const totalEtp   = st[ids.etp_collecte]+st[ids.etp_partenariat]+st[ids.etp_ldf];
+  const coutParDept= st[ids.nb_depts]>0 ? totalGlobal/st[ids.nb_depts] : 0;
+  return { coutC,coutP,coutL,coutS,totalRH,totalFrais,totalGlobal,totalEtp,coutParDept,
+    totalFin,fichesNettes,fichesAuto,theoC,theoP,theoL,theoS,fichesRest,fichesCovAgents,
+    nbF,nbP,fCom,fDep,fMat,fLoc,cC,cP,cS,pFE,pFinE,pParE,pFAC,pFS };
+}
+
+function renderResults(r, st, ids, pfx){
+  document.getElementById(pfx+'total_budget_global').textContent = fmt(r.totalGlobal)+' €';
+  document.getElementById(pfx+'cout_par_dept').textContent       = fmt(r.coutParDept)+' €';
+  document.getElementById(pfx+'total_etp').textContent           = r.totalEtp.toFixed(1).replace('.',',');
+  document.getElementById(pfx+'total_financeurs').textContent    = r.totalFin;
+  document.getElementById(pfx+'kpi_fiches').textContent          = fmt(r.nbF);
+  document.getElementById(pfx+'kpi_partenaires').textContent     = fmt(r.nbP);
+  document.getElementById(pfx+'total_frais_display').textContent = fmt(r.totalFrais)+' €';
+  document.getElementById(pfx+'fiches_nettes').textContent       = fmt(r.fichesNettes)+' fiches';
+  document.getElementById(ids.autonomie_sub).textContent =
+    document.getElementById(ids.pct_autonomie).value+'% → '+fmt(r.fichesAuto)+' fiches déduites (campagnes màj uniquement)';
+  document.getElementById(ids.financeurs_info).textContent =
+    r.totalFin+' financeurs ('+st[ids.financeurs_par_dept]+'/dépt.)';
+  document.getElementById(ids.sais_calcul_detail).textContent =
+    `(${fmt(r.fichesNettes)} − ${fmt(r.fichesCovAgents)} agents) ÷ ${r.pFS} = ${r.theoS.toFixed(1).replace('.',',')} CDD`;
+
+  const setC=(id,val,ref)=>{
+    const el=document.getElementById(id);
+    el.textContent=val.toFixed(2).replace('.',',')+(id.includes('sais')?'  CDD':' ETP');
+    el.className='row-computed'+(val>ref*1.2?' warn':'');
+  };
+  setC(pfx+'etp_theo_collecte', r.theoC, st[ids.etp_collecte]);
+  setC(pfx+'etp_theo_part',     r.theoP, st[ids.etp_partenariat]);
+  setC(pfx+'etp_theo_ldf',      r.theoL, st[ids.etp_ldf]);
+  setC(pfx+'etp_theo_sais',     r.theoS, st[ids.nb_saisonniers]);
+
+  const lignes=[
+    {label:'Agent de collecte',tag:'collecte',   vol:st[ids.etp_collecte].toFixed(1).replace('.',',')+' ETP',   cu:fmt(r.cC)+' €', total:r.coutC},
+    {label:'Partenariats',     tag:'partenariat',vol:st[ids.etp_partenariat].toFixed(1).replace('.',',')+' ETP',cu:fmt(r.cP)+' €', total:r.coutP},
+    {label:'Levée de fonds',   tag:'partenariat',vol:st[ids.etp_ldf].toFixed(2).replace('.',',')+' ETP',        cu:fmt(r.cP)+' €', total:r.coutL},
+    {label:'CDD Saisonniers',  tag:'saisonnier', vol:st[ids.nb_saisonniers]+' contrats',                        cu:fmt(r.cS)+' €', total:r.coutS},
+    {label:'Communication',    tag:'frais',      vol:'—',cu:'—',total:r.fCom},
+    {label:'Déplacements',     tag:'frais',      vol:'—',cu:'—',total:r.fDep},
+    {label:'Matériel',         tag:'frais',      vol:'—',cu:'—',total:r.fMat},
+    {label:'Locaux',           tag:'frais',      vol:'—',cu:'—',total:r.fLoc},
+  ];
+  const tbody=document.getElementById(pfx+'detail_body');
+  tbody.innerHTML='';
+  lignes.forEach(l=>{
+    tbody.innerHTML+=`<tr><td><span class="tag-poste tag-${l.tag}">${l.label}</span></td><td class="mono">${l.vol}</td><td class="mono">${l.cu}</td><td class="right bold-mono">${fmt(l.total)} €</td></tr>`;
+  });
+  document.getElementById(pfx+'total_rh_foot').textContent    = fmt(r.totalRH)+' €';
+  document.getElementById(pfx+'total_frais_foot').textContent = fmt(r.totalFrais)+' €';
+  document.getElementById(pfx+'total_foot').textContent       = fmt(r.totalGlobal)+' €';
+}
+
+/* ---- CALCUL BUDGET N ---- */
+function compute(){
+  const ids={
+    taux_charges:'taux_charges',
+    brut_collecte:'brut_collecte', brut_partenariat:'brut_partenariat', brut_saisonnier:'brut_saisonnier',
+    charge_collecte:'charge_collecte', charge_partenariat:'charge_partenariat', charge_saisonnier:'charge_saisonnier',
+    nb_fiches:'nb_fiches', pct_autonomie:'pct_autonomie', nb_partenaires:'nb_partenaires',
+    postulat_fiches_etp:'postulat_fiches_etp', postulat_financeurs_etp:'postulat_financeurs_etp',
+    postulat_partenaires_etp:'postulat_partenaires_etp', postulat_fiches_agent_campagne:'postulat_fiches_agent_campagne',
+    postulat_fiches_sais:'postulat_fiches_sais',
+    frais_com:'frais_com', frais_dep:'frais_dep', frais_mat:'frais_mat', frais_loc:'frais_loc',
+    nb_depts:'nb_depts', financeurs_par_dept:'financeurs_par_dept',
+    etp_collecte:'etp_collecte', etp_partenariat:'etp_partenariat', etp_ldf:'etp_ldf', nb_saisonniers:'nb_saisonniers',
+    autonomie_sub:'autonomie_sub', financeurs_info:'financeurs_info', sais_calcul_detail:'sais_calcul_detail'
+  };
+  const r = calcBudget(stateB, ids);
+  renderResults(r, stateB, ids, '');
+
+  // Met à jour la comparaison avec le budget cible de l'onglet 2
+  updateComparaison(r.totalGlobal);
+}
+
+/* ---- CALCUL ORGANIGRAMME CIBLE ---- */
+function computeCible(){
+  const ids={
+    taux_charges:'c_taux_charges',
+    brut_collecte:'c_brut_collecte', brut_partenariat:'c_brut_partenariat', brut_saisonnier:'c_brut_saisonnier',
+    charge_collecte:'c_charge_collecte', charge_partenariat:'c_charge_partenariat', charge_saisonnier:'c_charge_saisonnier',
+    nb_fiches:'c_nb_fiches', pct_autonomie:'c_pct_autonomie', nb_partenaires:'c_nb_partenaires',
+    postulat_fiches_etp:'c_postulat_fiches_etp', postulat_financeurs_etp:'c_postulat_financeurs_etp',
+    postulat_partenaires_etp:'c_postulat_partenaires_etp', postulat_fiches_agent_campagne:'c_postulat_fiches_agent_campagne',
+    postulat_fiches_sais:'c_postulat_fiches_sais',
+    frais_com:'c_frais_com', frais_dep:'c_frais_dep', frais_mat:'c_frais_mat', frais_loc:'c_frais_loc',
+    nb_depts:'c_nb_depts', financeurs_par_dept:'c_financeurs_par_dept',
+    etp_collecte:'c_etp_collecte', etp_partenariat:'c_etp_partenariat', etp_ldf:'c_etp_ldf', nb_saisonniers:'c_nb_saisonniers',
+    autonomie_sub:'c_autonomie_sub', financeurs_info:'c_financeurs_info', sais_calcul_detail:'c_sais_calcul_detail'
+  };
+  const r = calcBudget(stateC, ids);
+  renderResults(r, stateC, ids, 'c_');
+
+  // Répercute sur l'onglet 1
+  updateComparaison(null, r.totalGlobal);
+}
+
+/* ---- COMPARAISON DANS L'ONGLET 1 ---- */
+let lastBudget2027 = 0;
+let lastBudgetCible = 250000;
+
+function updateComparaison(budget2027, budgetCible){
+  if(budget2027 !== null && budget2027 !== undefined) lastBudget2027 = budget2027;
+  if(budgetCible !== null && budgetCible !== undefined) lastBudgetCible = budgetCible;
+
+  document.getElementById('ref_budget_cible').textContent = fmt(lastBudgetCible)+' €';
+
+  const ecartTotal   = lastBudgetCible - lastBudget2027;
+  const deptsRestants= Math.max(1, stateB.nb_region_depts - stateB.nb_depts);
+  const ecartParDept = ecartTotal / deptsRestants;
+
+  // Mise à jour du sous-titre "depts restants"
+  document.getElementById('depts_restants_sub').textContent =
+    deptsRestants + ' département' + (deptsRestants > 1 ? 's' : '') + ' restant' + (deptsRestants > 1 ? 's' : '') + ' à couvrir';
+
+  const pct = Math.min(100,(lastBudget2027/Math.max(1,lastBudgetCible))*100);
+  document.getElementById('progress_fill').style.width  = pct.toFixed(1)+'%';
+  document.getElementById('progress_label').textContent = pct.toFixed(0)+'%';
+
+  const box = document.getElementById('ecart_box');
+  let className, mainLine, detailLine;
+
+  if(ecartTotal < 0){
+    // Budget N > cible : impossible
+    className  = 'ecart-box ecart-err';
+    mainLine   = `⚠ Budget N (${fmt(lastBudget2027)} €) dépasse la cible de ${fmt(Math.abs(ecartTotal))} €`;
+    detailLine = `Cible 2028 : ${fmt(lastBudgetCible)} €`;
+  } else {
+    const perDept = Math.round(ecartParDept);
+    if(ecartParDept < 15000){
+      className = 'ecart-box ecart-ok';
+      mainLine  = `✓ Transition faisable — ${fmt(perDept)} €/dépt. restant`;
+    } else if(ecartParDept <= 20000){
+      className = 'ecart-box ecart-warn';
+      mainLine  = `~ Transition tendue — ${fmt(perDept)} €/dépt. restant`;
+    } else {
+      className = 'ecart-box ecart-err';
+      mainLine  = `⚠ Transition difficile — ${fmt(perDept)} €/dépt. restant`;
+    }
+    detailLine = `Écart total : ${fmt(ecartTotal)} € ÷ ${deptsRestants} dépt. restant${deptsRestants>1?'s':''} · Cible : < 15 000 €/dépt.`;
+  }
+
+  box.className = className;
+  document.getElementById('ecart_line').textContent   = mainLine;
+  document.getElementById('ecart_detail').textContent = detailLine;
+}
+
+/* ---- EXPORTS CSV ---- */
+function exportCSV(){
+  const r=calcBudget(stateB,{
+    taux_charges:'taux_charges',
+    brut_collecte:'brut_collecte',brut_partenariat:'brut_partenariat',brut_saisonnier:'brut_saisonnier',
+    charge_collecte:'charge_collecte',charge_partenariat:'charge_partenariat',charge_saisonnier:'charge_saisonnier',
+    nb_fiches:'nb_fiches',pct_autonomie:'pct_autonomie',nb_partenaires:'nb_partenaires',
+    postulat_fiches_etp:'postulat_fiches_etp',postulat_financeurs_etp:'postulat_financeurs_etp',
+    postulat_partenaires_etp:'postulat_partenaires_etp',postulat_fiches_agent_campagne:'postulat_fiches_agent_campagne',
+    postulat_fiches_sais:'postulat_fiches_sais',
+    frais_com:'frais_com',frais_dep:'frais_dep',frais_mat:'frais_mat',frais_loc:'frais_loc',
+    nb_depts:'nb_depts',financeurs_par_dept:'financeurs_par_dept',
+    etp_collecte:'etp_collecte',etp_partenariat:'etp_partenariat',etp_ldf:'etp_ldf',nb_saisonniers:'nb_saisonniers',
+    autonomie_sub:'autonomie_sub',financeurs_info:'financeurs_info',sais_calcul_detail:'sais_calcul_detail'
+  });
+  _doExport(r, stateB, 'budget_N');
+}
+function exportCSVCible(){
+  const r=calcBudget(stateC,{
+    taux_charges:'c_taux_charges',
+    brut_collecte:'c_brut_collecte',brut_partenariat:'c_brut_partenariat',brut_saisonnier:'c_brut_saisonnier',
+    charge_collecte:'c_charge_collecte',charge_partenariat:'c_charge_partenariat',charge_saisonnier:'c_charge_saisonnier',
+    nb_fiches:'c_nb_fiches',pct_autonomie:'c_pct_autonomie',nb_partenaires:'c_nb_partenaires',
+    postulat_fiches_etp:'c_postulat_fiches_etp',postulat_financeurs_etp:'c_postulat_financeurs_etp',
+    postulat_partenaires_etp:'c_postulat_partenaires_etp',postulat_fiches_agent_campagne:'c_postulat_fiches_agent_campagne',
+    postulat_fiches_sais:'c_postulat_fiches_sais',
+    frais_com:'c_frais_com',frais_dep:'c_frais_dep',frais_mat:'c_frais_mat',frais_loc:'c_frais_loc',
+    nb_depts:'c_nb_depts',financeurs_par_dept:'c_financeurs_par_dept',
+    etp_collecte:'c_etp_collecte',etp_partenariat:'c_etp_partenariat',etp_ldf:'c_etp_ldf',nb_saisonniers:'c_nb_saisonniers',
+    autonomie_sub:'c_autonomie_sub',financeurs_info:'c_financeurs_info',sais_calcul_detail:'c_sais_calcul_detail'
+  });
+  _doExport(r, stateC, 'organigramme_cible');
+}
+function _doExport(r, st, fname){
+  const lignes=[
+    'Poste;Volume;Coût unitaire (€);Total (€)',
+    `Agent de collecte;${st[Object.keys(st)[0]]} ETP;${r.cC};${Math.round(r.coutC)}`,
+    `Partenariats;;;${Math.round(r.coutP)}`,
+    `Levée de fonds;;;${Math.round(r.coutL)}`,
+    `CDD Saisonniers;;;${Math.round(r.coutS)}`,
+    `Total RH;;;${Math.round(r.totalRH)}`,``,
+    `Communication;;;${r.fCom}`,`Déplacements;;;${r.fDep}`,`Matériel;;;${r.fMat}`,`Locaux;;;${r.fLoc}`,
+    `Total frais;;;${Math.round(r.totalFrais)}`,``,
+    `BUDGET TOTAL;;;${Math.round(r.totalGlobal)}`
+  ];
+  const blob=new Blob(['\uFEFF'+lignes.join('\n')],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`solinum_${fname}.csv`;a.click();
+}
+
+syncB(); syncC(); compute(); computeCible();
+</script>
+</body>
+</html>
